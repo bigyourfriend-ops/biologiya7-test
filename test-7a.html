@@ -634,6 +634,7 @@ const JURY="Жюри (тексеру)",DEFCLS=["7 «А»","7 «Б»","7 «В»",
 function classList(ov){const c=(ov&&Array.isArray(ov.classes)&&ov.classes.length)?ov.classes.filter(x=>x!==JURY):DEFCLS;return[...c,JURY]}
 applyQ(QOV);
 let CLASSLIST=classList(QOV);
+let ENDPOINT=(o=>o&&typeof o.endpoint==="string"&&/^https:\/\/script\.google\.com\//.test(o.endpoint)?o.endpoint:"")(QOV);
 const MAXQ=30;
 /* Өтілген бөлімдер (әдепкі таңдау): 1-тоқсан — I–III, 2-тоқсан — IV. Жаңа бөлім өткен сайын осында қосылады */
 const STUDIED=[0,1,2,3];
@@ -647,6 +648,15 @@ function mk(ci,qi){const q=CH[ci].q[qi],idx=rnd([0,1,2,3]);return{ci,qi,text:q[0
 
 /* ---------- result code ---------- */
 function hash(s){let h=2166136261;for(const c of s){h^=c.codePointAt(0);h=Math.imul(h,16777619)}return(h>>>0).toString(36)}
+const SENT=new Set();
+async function autoSend(){const el=$("#code");if(!el||!ENDPOINT)return;const code=el.textContent.trim();
+ let st=$("#sendst");if(!st){st=document.createElement("p");st.id="sendst";st.className="small";st.style.margin="0";el.insertAdjacentElement("afterend",st)}
+ const okMsg=t=>{st.textContent=t;st.style.color="var(--good)"};
+ if(SENT.has(code)){okMsg("✓ Нәтиже мұғалімге автоматты түрде жіберілді.");return}
+ st.textContent="Нәтиже мұғалімге жіберілуде…";st.style.color="var(--mute)";
+ try{const r=await fetch(ENDPOINT,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:code});const j=await r.json();if(!j.ok)throw 0;SENT.add(code);okMsg("✓ Нәтиже мұғалімге автоматты түрде жіберілді.")}
+ catch(e){try{await fetch(ENDPOINT,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:code});SENT.add(code);okMsg("✓ Нәтиже мұғалімге жіберілді. Қажет болса, кодты да көшіріп жібер.")}
+  catch(e2){st.textContent="Автоматты жіберу сәтсіз. Кодты көшіріп, мұғаліміңе жібер.";st.style.color="var(--bad)"}}}
 function encodeRes(o){const j=JSON.stringify(o),b=btoa(unescape(encodeURIComponent(j))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");return`BIO7-${b}.${hash(j)}`}
 function decodeRes(code){const m=String(code).trim().match(/^BIO7-([A-Za-z0-9_-]+)\.([a-z0-9]+)$/);if(!m)return null;
  try{let b=m[1].replace(/-/g,"+").replace(/_/g,"/");while(b.length%4)b+="=";const j=decodeURIComponent(escape(atob(b)));if(hash(j)!==m[2])return null;
@@ -756,7 +766,7 @@ function resultView(){
  window.scrollTo(0,0);
  $$(".rt").forEach(b=>b.onclick=()=>startRetry(+b.dataset.ch));
  $("#again").onclick=startView;
- const cp=$("#copy");if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(code);$("#copied").textContent="Көшірілді ✓"}catch(e){const r=document.createRange();r.selectNodeContents($("#code"));const s=getSelection();s.removeAllRanges();s.addRange(r);$("#copied").textContent="Код белгіленді: Ctrl+C (телефонда «Көшіру») басыңыз."}};
+ autoSend();const cp=$("#copy");if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(code);$("#copied").textContent="Көшірілді ✓"}catch(e){const r=document.createRange();r.selectNodeContents($("#code"));const s=getSelection();s.removeAllRanges();s.addRange(r);$("#copied").textContent="Код белгіленді: Ctrl+C (телефонда «Көшіру») басыңыз."}};
 }
 function simpleResultView(){
  const tot=S.chs.reduce((s,ci)=>s+S.res[ci].ok,0),n=S.items.length,p=pct(tot,n),code=S.stage==="prac"?"":resultCode();
@@ -772,7 +782,7 @@ function simpleResultView(){
   <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" id="copy">Кодты көшіру</button><button class="btn ghost" id="again">Жаңа тест</button></div>
   <p class="small muted" id="copied" role="status"></p></section>`:`<button class="btn ghost" id="again">Жаңа тест</button>`}</main>`;
  window.scrollTo(0,0);$("#again").onclick=startView;
- const cp=$("#copy");if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(code);$("#copied").textContent="Көшірілді ✓"}catch(e){const r=document.createRange();r.selectNodeContents($("#code"));const s=getSelection();s.removeAllRanges();s.addRange(r);$("#copied").textContent="Код белгіленді: Ctrl+C (телефонда «Көшіру») басыңыз."}}}
+ autoSend();const cp=$("#copy");if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(code);$("#copied").textContent="Көшірілді ✓"}catch(e){const r=document.createRange();r.selectNodeContents($("#code"));const s=getSelection();s.removeAllRanges();s.addRange(r);$("#copied").textContent="Код белгіленді: Ctrl+C (телефонда «Көшіру») басыңыз."}}}
 function studyCard(ci){const r=S.res[ci],c=CH[ci],pars=[...new Set(r.wrong.map(w=>w.par))].sort((a,b)=>a-b);
  return`<section class="card study"><span class="tag" style="background:var(--bad-soft);color:var(--bad)">${r.ok}/${r.n} · ${c.r} бөлім</span><h2 style="margin-top:10px">${esc(c.t)}</h2>
  <div class="book">${bookIcon}<div><b>Оқулықтан қайта оқы:</b> ${pars.map(p=>`§${p} (${pages(p)})`).join(", ")||"—"}<br><span class="small muted">Бүкіл бөлім: ${c.p[0]}–${c.p[1]}-беттер</span></div></div>

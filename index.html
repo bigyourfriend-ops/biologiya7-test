@@ -636,6 +636,7 @@ const JURY="Жюри (тексеру)",DEFCLS=["7 «А»","7 «Б»","7 «В»",
 function classList(ov){const c=(ov&&Array.isArray(ov.classes)&&ov.classes.length)?ov.classes.filter(x=>x!==JURY):DEFCLS;return[...c,JURY]}
 applyQ(_qd||QOV);
 let CLASSLIST=classList(_qd||QOV);
+let ENDPOINT=(o=>o&&typeof o.endpoint==="string"&&/^https:\/\/script\.google\.com\//.test(o.endpoint)?o.endpoint:"")(_qd||QOV);
 const MAXQ=30;
 /* Өтілген бөлімдер (әдепкі таңдау): 1-тоқсан — I–III, 2-тоқсан — IV. Жаңа бөлім өткен сайын осында қосылады */
 const STUDIED=[0,1,2,3];
@@ -649,6 +650,15 @@ function mk(ci,qi){const q=CH[ci].q[qi],idx=rnd([0,1,2,3]);return{ci,qi,text:q[0
 
 /* ---------- result code ---------- */
 function hash(s){let h=2166136261;for(const c of s){h^=c.codePointAt(0);h=Math.imul(h,16777619)}return(h>>>0).toString(36)}
+const SENT=new Set();
+async function autoSend(){const el=$("#code");if(!el||!ENDPOINT)return;const code=el.textContent.trim();
+ let st=$("#sendst");if(!st){st=document.createElement("p");st.id="sendst";st.className="small";st.style.margin="0";el.insertAdjacentElement("afterend",st)}
+ const okMsg=t=>{st.textContent=t;st.style.color="var(--good)"};
+ if(SENT.has(code)){okMsg("✓ Нәтиже мұғалімге автоматты түрде жіберілді.");return}
+ st.textContent="Нәтиже мұғалімге жіберілуде…";st.style.color="var(--mute)";
+ try{const r=await fetch(ENDPOINT,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:code});const j=await r.json();if(!j.ok)throw 0;SENT.add(code);okMsg("✓ Нәтиже мұғалімге автоматты түрде жіберілді.")}
+ catch(e){try{await fetch(ENDPOINT,{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=utf-8"},body:code});SENT.add(code);okMsg("✓ Нәтиже мұғалімге жіберілді. Қажет болса, кодты да көшіріп жібер.")}
+  catch(e2){st.textContent="Автоматты жіберу сәтсіз. Кодты көшіріп, мұғаліміңе жібер.";st.style.color="var(--bad)"}}}
 function encodeRes(o){const j=JSON.stringify(o),b=btoa(unescape(encodeURIComponent(j))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");return`BIO7-${b}.${hash(j)}`}
 function decodeRes(code){const m=String(code).trim().match(/^BIO7-([A-Za-z0-9_-]+)\.([a-z0-9]+)$/);if(!m)return null;
  try{let b=m[1].replace(/-/g,"+").replace(/_/g,"/");while(b.length%4)b+="=";const j=decodeURIComponent(escape(atob(b)));if(hash(j)!==m[2])return null;
@@ -758,7 +768,7 @@ function resultView(){
  window.scrollTo(0,0);
  $$(".rt").forEach(b=>b.onclick=()=>startRetry(+b.dataset.ch));
  $("#again").onclick=startView;
- const cp=$("#copy");if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(code);$("#copied").textContent="Көшірілді ✓"}catch(e){const r=document.createRange();r.selectNodeContents($("#code"));const s=getSelection();s.removeAllRanges();s.addRange(r);$("#copied").textContent="Код белгіленді: Ctrl+C (телефонда «Көшіру») басыңыз."}};
+ autoSend();const cp=$("#copy");if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(code);$("#copied").textContent="Көшірілді ✓"}catch(e){const r=document.createRange();r.selectNodeContents($("#code"));const s=getSelection();s.removeAllRanges();s.addRange(r);$("#copied").textContent="Код белгіленді: Ctrl+C (телефонда «Көшіру») басыңыз."}};
 }
 function simpleResultView(){
  const tot=S.chs.reduce((s,ci)=>s+S.res[ci].ok,0),n=S.items.length,p=pct(tot,n),code=S.stage==="prac"?"":resultCode();
@@ -774,7 +784,7 @@ function simpleResultView(){
   <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn" id="copy">Кодты көшіру</button><button class="btn ghost" id="again">Жаңа тест</button></div>
   <p class="small muted" id="copied" role="status"></p></section>`:`<button class="btn ghost" id="again">Жаңа тест</button>`}</main>`;
  window.scrollTo(0,0);$("#again").onclick=startView;
- const cp=$("#copy");if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(code);$("#copied").textContent="Көшірілді ✓"}catch(e){const r=document.createRange();r.selectNodeContents($("#code"));const s=getSelection();s.removeAllRanges();s.addRange(r);$("#copied").textContent="Код белгіленді: Ctrl+C (телефонда «Көшіру») басыңыз."}}}
+ autoSend();const cp=$("#copy");if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(code);$("#copied").textContent="Көшірілді ✓"}catch(e){const r=document.createRange();r.selectNodeContents($("#code"));const s=getSelection();s.removeAllRanges();s.addRange(r);$("#copied").textContent="Код белгіленді: Ctrl+C (телефонда «Көшіру») басыңыз."}}}
 function studyCard(ci){const r=S.res[ci],c=CH[ci],pars=[...new Set(r.wrong.map(w=>w.par))].sort((a,b)=>a-b);
  return`<section class="card study"><span class="tag" style="background:var(--bad-soft);color:var(--bad)">${r.ok}/${r.n} · ${c.r} бөлім</span><h2 style="margin-top:10px">${esc(c.t)}</h2>
  <div class="book">${bookIcon}<div><b>Оқулықтан қайта оқы:</b> ${pars.map(p=>`§${p} (${pages(p)})`).join(", ")||"—"}<br><span class="small muted">Бүкіл бөлім: ${c.p[0]}–${c.p[1]}-беттер</span></div></div>
@@ -828,10 +838,10 @@ const LS_QD="bio7_qdraft",LS_TOK="bio7_gh_token";
 let QPUB=normQ(QOV),QW=(()=>{try{const d=JSON.parse(localStorage.getItem(LS_QD)||"null");return d?normQ(d):clone(QPUB)}catch(e){return clone(QPUB)}})();
 let QCI=0,QE=null,QMSG="";
 function clone(o){return JSON.parse(JSON.stringify(o))}
-function normQ(o){return{edits:(o&&o.edits)||{},added:(o&&o.added)||{},classes:(o&&Array.isArray(o.classes)&&o.classes.length)?o.classes.filter(x=>x!==JURY):DEFCLS.slice()}}
+function normQ(o){return{endpoint:(o&&typeof o.endpoint==="string")?o.endpoint:"",edits:(o&&o.edits)||{},added:(o&&o.added)||{},classes:(o&&Array.isArray(o.classes)&&o.classes.length)?o.classes.filter(x=>x!==JURY):DEFCLS.slice()}}
 function qDirty(){return JSON.stringify(QW)!==JSON.stringify(QPUB)}
 function qSaveDraft(){try{qDirty()?localStorage.setItem(LS_QD,JSON.stringify(QW)):localStorage.removeItem(LS_QD)}catch(e){}}
-function rebuildQ(){CH.forEach((c,ci)=>{c.q=clone(CH0[ci].q)});applyQ(QW);CLASSLIST=classList(QW)}
+function rebuildQ(){CH.forEach((c,ci)=>{c.q=clone(CH0[ci].q)});applyQ(QW);CLASSLIST=classList(QW);ENDPOINT=/^https:\/\/script\.google\.com\//.test(QW.endpoint)?QW.endpoint:""}
 function qPools(ci){const P={};let j=0;CH[ci].q.forEach((q,i)=>{if(q[4]){P[i]="қайталау";return}P[i]=j<18?(j%2?"Б":"А"):"қайталау";j++});return P}
 function chParas(ci){const p=CH[ci].p;return Object.keys(PAR).map(Number).filter(n=>PAR[n]>=p[0]&&PAR[n]<=p[1])}
 function qeditView(){
@@ -905,6 +915,43 @@ function bindClasses(){
  $$(".cup").forEach(b=>b.onclick=()=>{const i=+b.dataset.i;if(i>0){const c=QW.classes;[c[i-1],c[i]]=[c[i],c[i-1]];qSaveDraft();rebuildQ();teacherView()}});
  const jc=$("#jclr");if(jc)jc.onclick=()=>{REC=REC.filter(x=>x.c!==JURY);lsSave(LS_REC,REC);teacherView()};
 }
+const LS_SK="bio7_sync_key";let SYNC={t:0,err:"",busy:false};
+function syncKey(){try{return localStorage.getItem(LS_SK)||""}catch(e){return""}}
+async function syncNow(manual){if(!ENDPOINT||!syncKey()||SYNC.busy)return;SYNC.busy=true;
+ try{const r=await fetch(ENDPOINT+"?key="+encodeURIComponent(syncKey())+"&t="+Date.now(),{cache:"no-store"});const j=await r.json();
+  if(!j.ok)throw new Error(j.error==="key"?"құпия сөз сәйкес емес":"қате жауап");
+  const R=await importCodes(j.codes||[]);SYNC={t:Date.now(),err:"",busy:false,last:R.ok+R.upd};
+  if(manual||R.ok+R.upd>0){if(!["qedit","add","classes"].includes(TV)||manual)teacherView()}}
+ catch(e){SYNC={t:SYNC.t,err:e.message||"байланыс жоқ",busy:false};if(manual)teacherView()}}
+function syncView(){const on=!!(ENDPOINT&&syncKey()),ghCode=`https://github.com/${GH.owner}/${GH.repo}/blob/main/apps-script/Code.gs`;
+ return`<div class="mhead"><div><h1>Автоматты жинау</h1><p class="muted small" style="margin:4px 0 0">${on?`Қосулы · ${SYNC.t?"соңғы жаңарту "+new Date(SYNC.t).toLocaleTimeString("kk-KZ",{hour:"2-digit",minute:"2-digit"}):"әлі жаңартылмады"}${SYNC.err?" · қате: "+esc(SYNC.err):""}`:"Өшірулі — оқушылар кодты қолмен жібереді"}</p></div>
+  ${on?`<div class="filters"><button class="btn sm" id="snow">↻ Қазір жаңарту</button></div>`:""}</div>
+ <section class="card" style="display:grid;gap:12px;margin-bottom:16px"><h2>Қалай жұмыс істейді</h2>
+  <p style="margin:0">Оқушы тестті аяқтағанда нәтижесі сіздің Google Таблицаңызға өзі түседі, ал кабинет оны әр минут сайын жүктеп алады. Код қолмен жіберудің қажеті жоқ (бірақ код бұрынғыдай көрсетіледі — интернет болмаса да жоғалмайды).</p>
+  <ol style="margin:0;padding-left:20px;display:grid;gap:6px">
+   <li>Жаңа Google Таблица ашыңыз → <b>Кеңейтімдер → Apps Script</b>.</li>
+   <li>Ондағы кодты өшіріп, <a href="${ghCode}" target="_blank" rel="noopener">Code.gs</a> кодын қойыңыз (төмендегі батырмамен көшіруге болады). Ішіндегі <code>SECRET</code> орнына өз құпия сөзіңізді жазыңыз.</li>
+   <li><b>Deploy → New deployment</b> → түрі <b>Web app</b> · Execute as: <b>Me</b> · Who has access: <b>Anyone</b> → Deploy, рұқсат беріңіз.</li>
+   <li>Шыққан <b>Web app URL</b>-ды және құпия сөзді төменге қойып, «Сақтау және тексеру» басыңыз. Сосын «Оқушыларға жариялау» басыңыз.</li></ol>
+  <div class="toolbar"><button class="btn sm ghost" id="scopy">Code.gs кодын көшіру</button><span class="small muted" id="scmsg"></span></div></section>
+ <section class="card" style="display:grid;gap:12px;margin-bottom:16px"><h2>Баптау</h2>
+  <div class="field"><label for="surl">Web app URL</label><input class="input" id="surl" placeholder="https://script.google.com/macros/s/…/exec" value="${esc(QW.endpoint)}"></div>
+  <div class="field"><label for="skey">Құпия сөз (Code.gs ішіндегі SECRET)</label><input class="input" id="skey" type="password" value="${esc(syncKey())}" autocomplete="off"></div>
+  <p class="small muted" style="margin:0">Құпия сөз тек осы браузерде сақталады — онсыз ешкім нәтижелерді оқи алмайды. URL оқушылардың бетіне жарияланады, ол арқылы тек нәтиже жіберуге болады.</p>
+  <div class="toolbar"><button class="btn" id="ssave">Сақтау және тексеру</button>${QW.endpoint?`<button class="btn ghost" id="soff">Өшіру</button>`:""}<span class="small" id="smsg" role="status"></span></div></section>
+ ${pubCard()}`}
+function bindSync(){bindPub();
+ const sn=$("#snow");if(sn)sn.onclick=()=>{sn.disabled=true;syncNow(true)};
+ $("#scopy").onclick=async()=>{try{const r=await fetch("apps-script/Code.gs",{cache:"no-store"});const t=await r.text();await navigator.clipboard.writeText(t);$("#scmsg").textContent="Көшірілді ✓"}catch(e){$("#scmsg").textContent="Көшіру мүмкін болмады — Code.gs сілтемесін ашыңыз."}};
+ $("#ssave").onclick=async()=>{const u=$("#surl").value.trim(),k=$("#skey").value;
+  if(!/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec$/.test(u)){$("#smsg").textContent="URL https://script.google.com/macros/s/…/exec түрінде болуы керек.";$("#smsg").style.color="var(--bad)";return}
+  if(!k){$("#smsg").textContent="Құпия сөзді жазыңыз.";$("#smsg").style.color="var(--bad)";return}
+  $("#smsg").textContent="Тексерілуде…";$("#smsg").style.color="var(--mute)";
+  try{const r=await fetch(u+"?key="+encodeURIComponent(k)+"&t="+Date.now(),{cache:"no-store"});const j=await r.json();if(!j.ok)throw new Error(j.error==="key"?"құпия сөз сәйкес емес":"қате жауап");
+   try{localStorage.setItem(LS_SK,k)}catch(e){}QW.endpoint=u;qSaveDraft();rebuildQ();QMSG="Байланыс бар ✓ Енді «Оқушыларға жариялау» басыңыз.";await syncNow(true);teacherView()}
+  catch(e){$("#smsg").textContent="Қосылу сәтсіз: "+(e.message||"байланыс жоқ")+". URL мен құпия сөзді, Who has access: Anyone екенін тексеріңіз.";$("#smsg").style.color="var(--bad)"}};
+ const so=$("#soff");if(so)so.onclick=()=>{QW.endpoint="";try{localStorage.removeItem(LS_SK)}catch(e){}qSaveDraft();rebuildQ();QMSG="Автоматты жинау өшірілді (жариялауды ұмытпаңыз).";teacherView()};
+}
 function bindQedit(){
  $("#qch").onchange=e=>{QCI=+e.target.value;QE=null;teacherView()};
  $("#qnew").onclick=()=>{QE={qi:null};teacherView();$("#qform").scrollIntoView({behavior:"smooth"})};
@@ -928,15 +975,15 @@ function bindQedit(){
 
 function teacherView(){
  const rs=data(),cl=classes(),empty=!all().length;
- const nav=[["overview","Шолу"],["students","Оқушылар",new Set(rs.map(x=>x.n.toLowerCase()+x.c)).size],["chapters","Бөлімдер"],["items","Сұрақтар талдауы"],["add","Нәтиже қосу",REC.length],["keys","Сабақ кілттері",keys().length],["qedit","Сұрақтар банкі"],["classes","Сыныптар",QW.classes.length]];
+ const nav=[["overview","Шолу"],["students","Оқушылар",new Set(rs.map(x=>x.n.toLowerCase()+x.c)).size],["chapters","Бөлімдер"],["items","Сұрақтар талдауы"],["add","Нәтиже қосу",REC.length],["keys","Сабақ кілттері",keys().length],["qedit","Сұрақтар банкі"],["classes","Сыныптар",QW.classes.length],["sync","Автоматты жинау"]];
  const titles={overview:"Шолу",students:"Оқушылар",chapters:"Бөлімдер",items:"Сұрақтар талдауы"};
  let body;
- if(TV==="add")body=addView();else if(TV==="keys")body=keysView();else if(TV==="qedit")body=qeditView();else if(TV==="classes")body=classesView();
+ if(TV==="add")body=addView();else if(TV==="keys")body=keysView();else if(TV==="qedit")body=qeditView();else if(TV==="classes")body=classesView();else if(TV==="sync")body=syncView();
  else if(empty)body=`<section class="card empty"><h2>Әзірге нәтиже жоқ</h2><p>Оқушылар тест соңында алатын <b>нәтиже кодын</b> сізге жібереді. Кодтарды «Нәтиже қосу» бөліміне қойыңыз.</p>
   <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><a class="btn" href="#teacher" data-go="add">Нәтиже қосу</a></div></section>`;
  else body={overview,students,chapters,items:itemsView}[TV](rs);
  $("#v-teacher").innerHTML=`<div class="shell"><aside class="side"><div class="who2"><div class="small muted">Мұғалімнің жеке кабинеті</div><b>${esc(TEACHER)}</b></div>
-  ${nav.map(([k,l,c])=>`<a href="#teacher" data-go="${k}" class="${TV===k?"on":""}">${l}${c!=null?`<span>${c}</span>`:""}</a>`).join("")}<a href="qr.html" class="qrlink">QR кодтар · тестті бастау</a></aside>
+  ${nav.map(([k,l,c])=>`<a href="#teacher" data-go="${k}" class="${TV===k?"on":""}">${l}${c!=null?`<span>${c}</span>`:""}</a>`).join("")}<a href="qr.html" class="qrlink">QR кодтар · тестті бастау</a>${ENDPOINT&&syncKey()?`<div class="small muted" style="padding:10px 12px 0">↻ Нәтижелер автоматты түрде жиналады${SYNC.t?" · "+new Date(SYNC.t).toLocaleTimeString("kk-KZ",{hour:"2-digit",minute:"2-digit"}):""}</div>`:""}</aside>
  <main class="main">
   
   ${DBERR?`<div class="banner"><span>${esc(DBERR)}</span></div>`:""}
@@ -949,7 +996,7 @@ function teacherView(){
  const fs=$("#fst");if(fs)fs.onchange=()=>{F.stage=fs.value;teacherView()};
  
  
- if(TV==="add")bindAdd();if(TV==="keys")bindKeys();if(TV==="qedit")bindQedit();if(TV==="classes")bindClasses();if(TV==="students")bindExport(rs);
+ if(TV==="add")bindAdd();if(TV==="keys")bindKeys();if(TV==="qedit")bindQedit();if(TV==="classes")bindClasses();if(TV==="sync")bindSync();if(TV==="students")bindExport(rs);
  $$(".del").forEach(b=>b.onclick=()=>delRec(b.dataset.id));
 }
 function kpi(v,l,extra=""){return`<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div>${extra}</div>`}
@@ -1068,14 +1115,18 @@ function bindSeed(){const b=$("#seedBtn");if(!b)return;b.onclick=async()=>{b.dis
  try{if(DB)await DB.doc("meta/keys").set({list:kl});KEYLIST=kl}catch(e){}
  if(!DB){lsSave(LS_REC,REC);lsSave(LS_KEYS,KEYLIST)}
  TV="overview";F.cls="all";teacherView()}}
+async function importCodes(codes){let ok=0,dup=0,bad=0,prac=0,upd=0;
+ for(const c of codes){const o=decodeRes(c);if(!o){bad++;continue}if(o.s==="prac"){prac++;continue}const id=hash(c);if(REC.some(r=>r.id===id)){dup++;continue}
+  const rec={id,m:o.m==="s"?"s":"",n:String(o.n).slice(0,80),c:String(o.c).slice(0,20),s:o.s,t:o.t||Date.now(),d:o.d||0,k:String(o.k||"").slice(0,8),r:o.r,a:String(o.a||"").slice(0,4000),x:o.x||0,f:o.f||[],added:Date.now()};
+  const si=REC.findIndex(r=>r.n===rec.n&&r.c===rec.c&&r.s===rec.s&&r.t===rec.t);
+  try{if(si>=0){if((rec.x||0)>=(REC[si].x||0)){if(DB){await DB.collection("results").doc(REC[si].id).delete();await DB.collection("results").doc(id).set(rec)}else REC[si]=rec;upd++}else dup++;continue}
+   if(DB)await DB.collection("results").doc(id).set(rec);else REC.push(rec);ok++}catch(e){bad++;DBERR=e.code==="quota_exceeded"?"Сақтау орны толды. Ескі нәтижелерді өшіріңіз.":"Кейбір кодтарды сақтау мүмкін болмады. Қайталап көріңіз."}}
+ if(!DB)lsSave(LS_REC,REC);return{ok,dup,bad,prac,upd}}
 function bindAdd(){bindClear();bindSeed();$("#addBtn").onclick=async()=>{
  const codes=$("#codes").value.match(/BIO7-[A-Za-z0-9_-]+\.[a-z0-9]+/g)||[];
  if(!codes.length){$("#addMsg").textContent="Код табылмады. Код «BIO7-» деп басталады.";return}
- let ok=0,dup=0,bad=0,prac=0;$("#addBtn").disabled=true;
- for(const c of codes){const o=decodeRes(c);if(!o){bad++;continue}if(o.s==="prac"){prac++;continue}const id=hash(c);if(REC.some(r=>r.id===id)){dup++;continue}
-  const rec={id,m:o.m==="s"?"s":"",n:String(o.n).slice(0,80),c:String(o.c).slice(0,20),s:o.s,t:o.t||Date.now(),d:o.d||0,k:String(o.k||"").slice(0,8),r:o.r,a:String(o.a||"").slice(0,4000),x:o.x||0,f:o.f||[],added:Date.now()};
-  try{if(DB)await DB.collection("results").doc(id).set(rec);else REC.push(rec);ok++}catch(e){bad++;DBERR=e.code==="quota_exceeded"?"Сақтау орны толды. Ескі нәтижелерді өшіріңіз.":"Кейбір кодтарды сақтау мүмкін болмады. Қайталап көріңіз."}}
- if(!DB)lsSave(LS_REC,REC);const msg=`Қосылды: ${ok}${dup?` · Бұрын қосылған: ${dup}`:""}${prac?` · Жаттығу (есепке кірмейді): ${prac}`:""}${bad?` · Қате код: ${bad}`:""}`;
+ $("#addBtn").disabled=true;const R=await importCodes(codes),{ok,dup,bad,prac,upd}=R;
+ const msg=`Қосылды: ${ok}${upd?` · Жаңартылды: ${upd}`:""}${dup?` · Бұрын қосылған: ${dup}`:""}${prac?` · Жаттығу (есепке кірмейді): ${prac}`:""}${bad?` · Қате код: ${bad}`:""}`;
  teacherView();const m=$("#addMsg");if(m)m.textContent=msg}}
 async function delRec(id){if(DB){try{await DB.collection("results").doc(id).delete()}catch(e){}}else{REC=REC.filter(r=>r.id!==id);lsSave(LS_REC,REC);teacherView()}}
 function keysView(){const ks=keys();
@@ -1098,7 +1149,7 @@ function route(){const t=APPMODE==="teacher"?"teacher":(APPMODE&&APPMODE!=="teac
  $("#t-test").classList.toggle("on",t==="test");$("#t-teacher").classList.toggle("on",t==="teacher");
  if(t==="teacher")teacherView()}
 window.addEventListener("hashchange",()=>{if(APPMODE){route();return}const s=location.hash==="#simple";if(s!==SIMPLE){SIMPLE=s;if(!Q)startView()}route()});
-if(APPMODE==="teacher"){IS_OWNER=true;REC=lsLoad(LS_REC);KEYLIST=lsLoad(LS_KEYS)}
+if(APPMODE==="teacher"){IS_OWNER=true;REC=lsLoad(LS_REC);KEYLIST=lsLoad(LS_KEYS);setTimeout(()=>syncNow(),800);setInterval(()=>{if(document.visibilityState==="visible")syncNow()},60000)}
 if(APPMODE!=="teacher")startView();route();
 (async()=>{
  if(APPMODE==="student"||APPMODE==="simple"){IS_OWNER=false}
