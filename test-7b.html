@@ -630,7 +630,10 @@ const STAGE_SHORT={pre:"кіріс",post:"қорытынды",late:"кейінг
 /* Тұрақты нұсқалар: суретсіз сұрақтардан A (9) және B (9) кезектесіп алынады, қалғаны мен сурет сұрақтары — R (қайталау) */
 function applyQ(ov){if(!ov)return;const E=ov.edits||{},A=ov.added||{};for(const k in E){const[ci,qi]=k.split(":").map(Number);if(CH[ci]&&CH[ci].q[qi])CH[ci].q[qi]=E[k]}for(const ci in A){if(CH[ci]&&Array.isArray(A[ci]))CH[ci].q.push(...A[ci])}}
 const CH0=JSON.parse(JSON.stringify(CH));
+const JURY="Жюри (тексеру)",DEFCLS=["7 «А»","7 «Б»","7 «В»","7 «Г»"];
+function classList(ov){const c=(ov&&Array.isArray(ov.classes)&&ov.classes.length)?ov.classes.filter(x=>x!==JURY):DEFCLS;return[...c,JURY]}
 applyQ(QOV);
+let CLASSLIST=classList(QOV);
 const MAXQ=30;
 /* Өтілген бөлімдер (әдепкі таңдау): 1-тоқсан — I–III, 2-тоқсан — IV. Жаңа бөлім өткен сайын осында қосылады */
 const STUDIED=[0,1,2,3];
@@ -659,7 +662,7 @@ function startView(){
   <div><span class="tag">Оқулық бойынша ${CH.reduce((a,c)=>a+c.q.length,0)} сұрақ · ${CH.length} бөлім${SIMPLE?" · қарапайым тест":""}</span><h1 style="margin-top:12px">Биологиядан тест</h1>
   <p class="muted" style="margin:8px 0 0">${SIMPLE?"Тест соңында нәтижеңді көресің. Нәтиже кодын мұғаліміңе жібер.":"Тесттен кейін қай тақырыптарды қайталау керек екенін көресің: оқулықтың нақты параграфы мен беті, негізгі анықтамалар, бейне түсіндірме және қателеріңнің талдауы."}</p></div>
   <div class="grid2"><div class="field"><label for="nm">Аты-жөнің</label><input class="input" id="nm" placeholder="Мысалы: Айгерім Серікқызы" autocomplete="name"></div>
-  <div class="field"><label for="cl">Сыныбың</label><select class="input" id="cl"><option>7 «А»</option><option>7 «Б»</option><option>7 «В»</option><option>7 «Г»</option></select></div></div>
+  <div class="field"><label for="cl">Сыныбың</label><select class="input" id="cl">${CLASSLIST.map(c=>`<option>${esc(c)}</option>`).join("")}</select></div></div>
   <div class="field"><label>Тест кезеңі <span class="muted small">(мұғалім қайсысын айтса, соны таңда)</span></label><div class="seg4">
    <label><input type="radio" name="st" value="pre" checked><span><b>Кіріс тест</b><br><span class="small muted">Бірінші тексеру, А нұсқасы</span></span></label>
    <label><input type="radio" name="st" value="post"><span><b>Қорытынды тест</b><br><span class="small muted">Қайталаудан кейін, Б нұсқасы</span></span></label>
@@ -675,6 +678,7 @@ function startView(){
  </section></main>`;
  const upd=()=>{const st=$('input[name=st]:checked').value,chs=$$(".cb:checked").map(c=>+c.value);$("#keyBox").classList.toggle("hidden",st==="prac");
   $("#cnt").textContent=chs.length?`${chs.length} бөлім · ${alloc(chs,st).reduce((a,b)=>a+b,0)} сұрақ`:"бөлім таңдалмады"};
+ if(location.hash==="#jury")$("#cl").value=JURY;
  $$('input[name=st]').forEach(r=>r.onchange=upd);$$(".cb").forEach(c=>c.onchange=upd);
  $("#all").onclick=()=>{$$(".cb").forEach(c=>c.checked=true);upd()};$("#studied").onclick=()=>{$$(".cb").forEach(c=>c.checked=STUDIED.includes(+c.value));upd()};$("#none").onclick=()=>{$$(".cb").forEach(c=>c.checked=false);upd()};upd();
  $("#go").onclick=()=>{

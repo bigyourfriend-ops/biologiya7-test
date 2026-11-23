@@ -53,6 +53,10 @@ h1,h2{font-family:var(--display);font-weight:600;margin:0;line-height:1.25;text-
    <p style="margin:0;color:var(--mute)">Сол сұрақтар, бірақ соңында тек нәтиже мен код. Қайталау жоспары жоқ.</p>
    <div class="qr"><img id="qb" alt="7 «Б» тестінің QR коды"></div><div class="url" id="ub"></div>
    <div class="row"><button class="btn" data-full="b">Толық экранда көрсету</button><a class="btn ghost" id="lb">Ашу</a></div></section>
+  <section class="card"><span class="tag" style="color:#5b6a63;background:#eef1ee">Жюри үшін</span><h2>Сайтты өзіңіз тексеріңіз</h2>
+   <p style="margin:0;color:var(--mute)">Толық тест, сынып ретінде «Жюри (тексеру)» таңдалып тұрады. Бұл нәтижелер сынып статистикасына кірмейді.</p>
+   <div class="qr"><img id="qj" alt="Жюриге арналған тесттің QR коды"></div><div class="url" id="uj"></div>
+   <div class="row"><button class="btn" data-full="j">Толық экранда көрсету</button><a class="btn ghost" id="lj">Ашу</a></div></section>
  </div>
  <section class="card teacher"><div><h2>Мұғалімге</h2>
   <ol class="steps"><li>Кабинетте сабақ кілтін жасаңыз және оны тақтаға жазыңыз.</li><li>QR кодты көрсетіңіз — оқушылар тестті тапсырады.</li><li>Оқушылар жіберген кодтарды кабинеттегі «Нәтиже қосу» бөліміне қойыңыз.</li></ol></div>
@@ -2361,9 +2365,9 @@ var qrcode = function() {
 </script>
 <script>
 const base=location.href.replace(/[#?].*$/,"").replace(/[^/]*$/,"");
-const T={a:{u:base+"test-7a.html",t:"7 «А» · Қателермен жұмыс бар тест"},b:{u:base+"test-7b.html",t:"7 «Б» · Қарапайым тест"}};
+const T={a:{u:base+"test-7a.html",t:"7 «А» · Қателермен жұмыс бар тест"},b:{u:base+"test-7b.html",t:"7 «Б» · Қарапайым тест"},j:{u:base+"test-7a.html#jury",t:"Жюри үшін · тексеру тесті"}};
 function qr(u){const q=qrcode(0,"M");q.addData(u);q.make();return q.createDataURL(10,2)}
-for(const k of["a","b"]){const d=qr(T[k].u);document.getElementById("q"+k).src=d;T[k].d=d;
+for(const k of["a","b","j"]){const d=qr(T[k].u);document.getElementById("q"+k).src=d;T[k].d=d;
  document.getElementById("u"+k).textContent=T[k].u;document.getElementById("l"+k).href=T[k].u}
 const F=document.getElementById("full");
 document.querySelectorAll("[data-full]").forEach(b=>b.onclick=()=>{const x=T[b.dataset.full];

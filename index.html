@@ -632,7 +632,10 @@ const STAGE_SHORT={pre:"кіріс",post:"қорытынды",late:"кейінг
 function applyQ(ov){if(!ov)return;const E=ov.edits||{},A=ov.added||{};for(const k in E){const[ci,qi]=k.split(":").map(Number);if(CH[ci]&&CH[ci].q[qi])CH[ci].q[qi]=E[k]}for(const ci in A){if(CH[ci]&&Array.isArray(A[ci]))CH[ci].q.push(...A[ci])}}
 const CH0=JSON.parse(JSON.stringify(CH));
 let _qd=null;try{_qd=JSON.parse(localStorage.getItem("bio7_qdraft")||"null")}catch(e){}
+const JURY="Жюри (тексеру)",DEFCLS=["7 «А»","7 «Б»","7 «В»","7 «Г»"];
+function classList(ov){const c=(ov&&Array.isArray(ov.classes)&&ov.classes.length)?ov.classes.filter(x=>x!==JURY):DEFCLS;return[...c,JURY]}
 applyQ(_qd||QOV);
+let CLASSLIST=classList(_qd||QOV);
 const MAXQ=30;
 /* Өтілген бөлімдер (әдепкі таңдау): 1-тоқсан — I–III, 2-тоқсан — IV. Жаңа бөлім өткен сайын осында қосылады */
 const STUDIED=[0,1,2,3];
@@ -661,7 +664,7 @@ function startView(){
   <div><span class="tag">Оқулық бойынша ${CH.reduce((a,c)=>a+c.q.length,0)} сұрақ · ${CH.length} бөлім${SIMPLE?" · қарапайым тест":""}</span><h1 style="margin-top:12px">Биологиядан тест</h1>
   <p class="muted" style="margin:8px 0 0">${SIMPLE?"Тест соңында нәтижеңді көресің. Нәтиже кодын мұғаліміңе жібер.":"Тесттен кейін қай тақырыптарды қайталау керек екенін көресің: оқулықтың нақты параграфы мен беті, негізгі анықтамалар, бейне түсіндірме және қателеріңнің талдауы."}</p></div>
   <div class="grid2"><div class="field"><label for="nm">Аты-жөнің</label><input class="input" id="nm" placeholder="Мысалы: Айгерім Серікқызы" autocomplete="name"></div>
-  <div class="field"><label for="cl">Сыныбың</label><select class="input" id="cl"><option>7 «А»</option><option>7 «Б»</option><option>7 «В»</option><option>7 «Г»</option></select></div></div>
+  <div class="field"><label for="cl">Сыныбың</label><select class="input" id="cl">${CLASSLIST.map(c=>`<option>${esc(c)}</option>`).join("")}</select></div></div>
   <div class="field"><label>Тест кезеңі <span class="muted small">(мұғалім қайсысын айтса, соны таңда)</span></label><div class="seg4">
    <label><input type="radio" name="st" value="pre" checked><span><b>Кіріс тест</b><br><span class="small muted">Бірінші тексеру, А нұсқасы</span></span></label>
    <label><input type="radio" name="st" value="post"><span><b>Қорытынды тест</b><br><span class="small muted">Қайталаудан кейін, Б нұсқасы</span></span></label>
@@ -677,6 +680,7 @@ function startView(){
  </section></main>`;
  const upd=()=>{const st=$('input[name=st]:checked').value,chs=$$(".cb:checked").map(c=>+c.value);$("#keyBox").classList.toggle("hidden",st==="prac");
   $("#cnt").textContent=chs.length?`${chs.length} бөлім · ${alloc(chs,st).reduce((a,b)=>a+b,0)} сұрақ`:"бөлім таңдалмады"};
+ if(location.hash==="#jury")$("#cl").value=JURY;
  $$('input[name=st]').forEach(r=>r.onchange=upd);$$(".cb").forEach(c=>c.onchange=upd);
  $("#all").onclick=()=>{$$(".cb").forEach(c=>c.checked=true);upd()};$("#studied").onclick=()=>{$$(".cb").forEach(c=>c.checked=STUDIED.includes(+c.value));upd()};$("#none").onclick=()=>{$$(".cb").forEach(c=>c.checked=false);upd()};upd();
  $("#go").onclick=()=>{
@@ -802,7 +806,7 @@ function lsLoad(k){try{const v=JSON.parse(localStorage.getItem(k)||"[]");return 
 function lsSave(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){DBERR="Нәтижелерді осы браузерде сақтау мүмкін болмады. Кестені Excel-ге жүктеп алыңыз.";return false}}
 function all(){return REC}
 function keys(){return KEYLIST}
-function data(){const d=all();return F.cls==="all"?d:d.filter(x=>x.c===F.cls)}
+function data(){const d=all();return F.cls==="all"?d.filter(x=>x.c!==JURY):d.filter(x=>x.c===F.cls)}
 function classes(){return[...new Set(all().map(x=>x.c))].sort()}
 const tot=x=>Object.values(x.r).reduce((a,[o,n])=>[a[0]+o,a[1]+n],[0,0]);
 const score=x=>{const[t,n]=tot(x);return pct(t,n)};
@@ -824,10 +828,10 @@ const LS_QD="bio7_qdraft",LS_TOK="bio7_gh_token";
 let QPUB=normQ(QOV),QW=(()=>{try{const d=JSON.parse(localStorage.getItem(LS_QD)||"null");return d?normQ(d):clone(QPUB)}catch(e){return clone(QPUB)}})();
 let QCI=0,QE=null,QMSG="";
 function clone(o){return JSON.parse(JSON.stringify(o))}
-function normQ(o){return{edits:(o&&o.edits)||{},added:(o&&o.added)||{}}}
+function normQ(o){return{edits:(o&&o.edits)||{},added:(o&&o.added)||{},classes:(o&&Array.isArray(o.classes)&&o.classes.length)?o.classes.filter(x=>x!==JURY):DEFCLS.slice()}}
 function qDirty(){return JSON.stringify(QW)!==JSON.stringify(QPUB)}
 function qSaveDraft(){try{qDirty()?localStorage.setItem(LS_QD,JSON.stringify(QW)):localStorage.removeItem(LS_QD)}catch(e){}}
-function rebuildQ(){CH.forEach((c,ci)=>{c.q=clone(CH0[ci].q)});applyQ(QW)}
+function rebuildQ(){CH.forEach((c,ci)=>{c.q=clone(CH0[ci].q)});applyQ(QW);CLASSLIST=classList(QW)}
 function qPools(ci){const P={};let j=0;CH[ci].q.forEach((q,i)=>{if(q[4]){P[i]="қайталау";return}P[i]=j<18?(j%2?"Б":"А"):"қайталау";j++});return P}
 function chParas(ci){const p=CH[ci].p;return Object.keys(PAR).map(Number).filter(n=>PAR[n]>=p[0]&&PAR[n]<=p[1])}
 function qeditView(){
@@ -848,19 +852,59 @@ function qeditView(){
   <span class="small" id="qerr" role="alert" style="color:var(--bad)"></span></div></section>`}
  return`<div class="mhead"><div><h1>Сұрақтар банкі</h1><p class="muted small" style="margin:4px 0 0">${CH.reduce((s,x)=>s+x.q.length,0)} сұрақ · өзгертілген ${nEd} · жаңа ${nAd}</p></div>
   <div class="filters"><select id="qch" aria-label="Бөлім">${CH.map((x,i)=>`<option value="${i}" ${i===ci?"selected":""}>${esc(x.r)} · ${esc(x.t)} (${x.q.length})</option>`).join("")}</select></div></div>
- <section class="card" style="display:grid;gap:10px;margin-bottom:16px">
-  ${qDirty()?`<p style="margin:0"><b>Жарияланбаған өзгерістер бар.</b> Оқушылар оларды «Жариялау» басылғаннан кейін көреді.</p>`:`<p style="margin:0" class="muted">Барлық өзгерістер жарияланған.</p>`}
-  <div class="toolbar"><button class="btn" id="qpub" ${qDirty()?"":"disabled"}>Оқушыларға жариялау</button><button class="btn ghost" id="qdl">questions.json жүктеп алу</button><span class="small" id="qmsg" role="status">${esc(QMSG)}</span></div>
-  <details><summary class="small">GitHub кілтін баптау (бір рет)</summary><div style="display:grid;gap:8px;margin-top:10px">
-   <p class="small muted" style="margin:0">GitHub → Settings → Developer settings → Fine-grained tokens → <b>${esc(GH.owner)}/${esc(GH.repo)}</b> репозиторийіне <b>Contents: Read and write</b> рұқсаты бар кілт жасаңыз. Кілт тек осы браузерде сақталады.</p>
-   <div class="toolbar"><input class="input" id="qtok" type="password" placeholder="github_pat_…" style="max-width:420px" value="${localStorage.getItem(LS_TOK)?"••••••••":""}"><button class="btn sm ghost" id="qtoksave">Сақтау</button></div>
-   <p class="small muted" style="margin:0">Кілтсіз де болады: «questions.json жүктеп алу» басып, файлды репозиторийге Add file → Upload files арқылы жүктеңіз.</p></div></details></section>
+ ${pubCard()}
  ${form}
  <section class="card" style="display:grid;gap:10px"><div class="toolbar" style="justify-content:space-between"><h2>${esc(c.r)} · ${esc(c.t)}</h2><button class="btn sm" id="qnew">+ Сұрақ қосу</button></div>
   <p class="small muted" style="margin:0">А және Б — кіріс және қорытынды тест нұсқалары, «қайталау» — қайта тексеру сұрақтары. Жаңа сұрақтар бөлімнің соңына қосылады, сондықтан бұрынғы нәтижелер бұзылмайды.</p>
   <div class="tbl"><table><thead><tr><th class="n">№</th><th>Сұрақ</th><th>Дұрыс жауап</th><th>§</th><th>Нұсқа</th><th></th></tr></thead><tbody>
   ${c.q.map((q,i)=>`<tr><td class="n">${i+1}</td><td>${esc(q[0])}${i>=base?` <span class="badge" style="background:var(--good-soft);color:var(--good)">жаңа</span>`:QW.edits[ci+":"+i]?` <span class="badge" style="background:var(--sun-soft);color:var(--sun)">өзгертілген</span>`:""}</td><td>${esc(q[1][0])}</td><td>§${q[2]}</td><td><span class="badge">${P[i]}</span></td><td><button class="btn sm quiet qed" data-i="${i}">Өңдеу</button></td></tr>`).join("")}
   </tbody></table></div></section>`}
+function pubCard(){return`<section class="card" style="display:grid;gap:10px;margin-bottom:16px">
+  ${qDirty()?`<p style="margin:0"><b>Жарияланбаған өзгерістер бар.</b> Оқушылар оларды «Оқушыларға жариялау» басылғаннан кейін көреді (сұрақтар мен сыныптар бірге жарияланады).</p>`:`<p style="margin:0" class="muted">Барлық өзгерістер жарияланған.</p>`}
+  <div class="toolbar"><button class="btn" id="qpub" ${qDirty()?"":"disabled"}>Оқушыларға жариялау</button><button class="btn ghost" id="qdl">questions.json жүктеп алу</button><span class="small" id="qmsg" role="status">${esc(QMSG)}</span></div>
+  <details><summary class="small">GitHub кілтін баптау (бір рет)</summary><div style="display:grid;gap:8px;margin-top:10px">
+   <p class="small muted" style="margin:0">GitHub → Settings → Developer settings → Fine-grained tokens → <b>${esc(GH.owner)}/${esc(GH.repo)}</b> репозиторийіне <b>Contents: Read and write</b> рұқсаты бар кілт жасаңыз. Кілт тек осы браузерде сақталады.</p>
+   <div class="toolbar"><input class="input" id="qtok" type="password" placeholder="github_pat_…" style="max-width:420px" value="${localStorage.getItem(LS_TOK)?"••••••••":""}"><button class="btn sm ghost" id="qtoksave">Сақтау</button></div>
+   <p class="small muted" style="margin:0">Кілтсіз де болады: «questions.json жүктеп алу» басып, файлды репозиторийге Add file → Upload files арқылы жүктеңіз.</p></div></details></section>`}
+function bindPub(){
+ $("#qtoksave").onclick=()=>{const v=$("#qtok").value.trim();if(v&&!v.startsWith("•")){try{localStorage.setItem(LS_TOK,v)}catch(e){}QMSG="Кілт сақталды."}else if(!v){try{localStorage.removeItem(LS_TOK)}catch(e){}QMSG="Кілт өшірілді."}teacherView()};
+ $("#qdl").onclick=()=>{const b=new Blob([JSON.stringify(QW,null,1)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="questions.json";document.body.appendChild(a);a.click();a.remove()};
+ $("#qpub").onclick=async()=>{const tok=(()=>{try{return localStorage.getItem(LS_TOK)}catch(e){return null}})();
+  if(!tok){QMSG="Алдымен GitHub кілтін баптаңыз немесе questions.json жүктеп алып, репозиторийге қолмен жүктеңіз.";teacherView();return}
+  const btn=$("#qpub");btn.disabled=true;$("#qmsg").textContent="Жариялануда…";
+  const url=`https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/questions.json`,H={Authorization:"Bearer "+tok,Accept:"application/vnd.github+json"};
+  try{let sha;const g=await fetch(url+"?ref=main",{headers:H,cache:"no-store"});if(g.ok)sha=(await g.json()).sha;else if(g.status!==404)throw new Error(g.status);
+   const body=JSON.stringify(QW,null,1),content=btoa(unescape(encodeURIComponent(body)));
+   const r=await fetch(url,{method:"PUT",headers:H,body:JSON.stringify({message:"Сұрақтар банкі жаңартылды",content,sha,branch:"main"})});
+   if(!r.ok)throw new Error(r.status);
+   QPUB=clone(QW);qSaveDraft();QMSG="Жарияланды. 1–2 минуттан кейін оқушылардың тестінде жаңарады."}
+  catch(e){QMSG="Жариялау сәтсіз ("+e.message+"). Кілтті тексеріңіз немесе questions.json-ды қолмен жүктеңіз."}
+  teacherView()};
+}
+function classesView(){
+ const cnt={};all().forEach(x=>cnt[x.c]=(cnt[x.c]||0)+1);
+ return`<div class="mhead"><div><h1>Сыныптар</h1><p class="muted small" style="margin:4px 0 0">${QW.classes.length} сынып + жюри үшін тексеру сыныбы</p></div></div>
+ ${pubCard()}
+ <section class="card" style="display:grid;gap:12px;margin-bottom:16px"><h2>Сынып қосу</h2>
+  <div class="toolbar"><input class="input" id="cnew" placeholder="Мысалы: 7 «Д»" style="max-width:260px"><button class="btn" id="cadd">Қосу</button><span class="small" id="cerr" role="alert" style="color:var(--bad)"></span></div>
+  <p class="small muted" style="margin:0">Сыныптар тізімі оқушылардың тест бетіндегі «Сыныбың» тізімінде көрінеді (жариялағаннан кейін).</p></section>
+ <section class="card" style="display:grid;gap:10px"><div class="tbl"><table><thead><tr><th>Сынып</th><th class="n">Нәтиже</th><th></th></tr></thead><tbody>
+ ${QW.classes.map((c,i)=>`<tr><td><b>${esc(c)}</b></td><td class="n">${cnt[c]||0}</td><td style="white-space:nowrap;text-align:right"><button class="btn sm quiet cup" data-i="${i}" ${i?"":"disabled"} aria-label="Жоғары">↑</button> <button class="btn sm quiet cdel" data-i="${i}">Тізімнен алу</button></td></tr>`).join("")}
+ <tr><td><b>${esc(JURY)}</b> <span class="badge" style="background:var(--sun-soft);color:var(--sun)">жюри үшін</span><div class="small muted">Жюри сайттың жұмысын өзі тексере алады. Бұл сыныптың нәтижелері «Барлық сыныптар» статистикасына кірмейді — оларды сынып сүзгісінен бөлек көруге болады.</div></td><td class="n">${cnt[JURY]||0}</td><td>${cnt[JURY]?`<button class="btn sm quiet" id="jclr">Нәтижелерін өшіру</button>`:""}</td></tr>
+ </tbody></table></div>
+ <p class="small muted" style="margin:0">Сыныпты тізімнен алғанда оның бұрынғы нәтижелері кабинетте сақталады.</p></section>`}
+function bindClasses(){
+ bindPub();
+ $("#cadd").onclick=()=>{const v=$("#cnew").value.trim().replace(/\s+/g," ");
+  if(!v){$("#cerr").textContent="Сынып атын жазыңыз.";return}
+  if(v.length>30){$("#cerr").textContent="Тым ұзын атау.";return}
+  if([...QW.classes,JURY].some(c=>c.toLowerCase()===v.toLowerCase())){$("#cerr").textContent="Мұндай сынып бар.";return}
+  QW.classes.push(v);QMSG="Сынып қосылды (жарияланбаған).";qSaveDraft();rebuildQ();teacherView()};
+ $("#cnew").onkeydown=e=>{if(e.key==="Enter")$("#cadd").click()};
+ $$(".cdel").forEach(b=>b.onclick=()=>{QW.classes.splice(+b.dataset.i,1);qSaveDraft();rebuildQ();teacherView()});
+ $$(".cup").forEach(b=>b.onclick=()=>{const i=+b.dataset.i;if(i>0){const c=QW.classes;[c[i-1],c[i]]=[c[i],c[i-1]];qSaveDraft();rebuildQ();teacherView()}});
+ const jc=$("#jclr");if(jc)jc.onclick=()=>{REC=REC.filter(x=>x.c!==JURY);lsSave(LS_REC,REC);teacherView()};
+}
 function bindQedit(){
  $("#qch").onchange=e=>{QCI=+e.target.value;QE=null;teacherView()};
  $("#qnew").onclick=()=>{QE={qi:null};teacherView();$("#qform").scrollIntoView({behavior:"smooth"})};
@@ -879,27 +923,15 @@ function bindQedit(){
   const rv=$("#qrevert");if(rv)rv.onclick=()=>{delete QW.edits[ci+":"+QE.qi];QE=null;qSaveDraft();rebuildQ();teacherView()};
   const dl=$("#qdel");if(dl)dl.onclick=()=>{QW.added[ci].splice(QE.qi-base,1);if(!QW.added[ci].length)delete QW.added[ci];QE=null;qSaveDraft();rebuildQ();teacherView()};
  }
- $("#qtoksave").onclick=()=>{const v=$("#qtok").value.trim();if(v&&!v.startsWith("•")){try{localStorage.setItem(LS_TOK,v)}catch(e){}QMSG="Кілт сақталды."}else if(!v){try{localStorage.removeItem(LS_TOK)}catch(e){}QMSG="Кілт өшірілді."}teacherView()};
- $("#qdl").onclick=()=>{const b=new Blob([JSON.stringify(QW,null,1)],{type:"application/json"}),a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="questions.json";document.body.appendChild(a);a.click();a.remove()};
- $("#qpub").onclick=async()=>{const tok=(()=>{try{return localStorage.getItem(LS_TOK)}catch(e){return null}})();
-  if(!tok){QMSG="Алдымен GitHub кілтін баптаңыз немесе questions.json жүктеп алып, репозиторийге қолмен жүктеңіз.";teacherView();return}
-  const btn=$("#qpub");btn.disabled=true;$("#qmsg").textContent="Жариялануда…";
-  const url=`https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/questions.json`,H={Authorization:"Bearer "+tok,Accept:"application/vnd.github+json"};
-  try{let sha;const g=await fetch(url+"?ref=main",{headers:H,cache:"no-store"});if(g.ok)sha=(await g.json()).sha;else if(g.status!==404)throw new Error(g.status);
-   const body=JSON.stringify(QW,null,1),content=btoa(unescape(encodeURIComponent(body)));
-   const r=await fetch(url,{method:"PUT",headers:H,body:JSON.stringify({message:"Сұрақтар банкі жаңартылды",content,sha,branch:"main"})});
-   if(!r.ok)throw new Error(r.status);
-   QPUB=clone(QW);qSaveDraft();QMSG="Жарияланды. 1–2 минуттан кейін оқушылардың тестінде жаңарады."}
-  catch(e){QMSG="Жариялау сәтсіз ("+e.message+"). Кілтті тексеріңіз немесе questions.json-ды қолмен жүктеңіз."}
-  teacherView()};
+ bindPub();
 }
 
 function teacherView(){
  const rs=data(),cl=classes(),empty=!all().length;
- const nav=[["overview","Шолу"],["students","Оқушылар",new Set(rs.map(x=>x.n.toLowerCase()+x.c)).size],["chapters","Бөлімдер"],["items","Сұрақтар талдауы"],["add","Нәтиже қосу",REC.length],["keys","Сабақ кілттері",keys().length],["qedit","Сұрақтар банкі"]];
+ const nav=[["overview","Шолу"],["students","Оқушылар",new Set(rs.map(x=>x.n.toLowerCase()+x.c)).size],["chapters","Бөлімдер"],["items","Сұрақтар талдауы"],["add","Нәтиже қосу",REC.length],["keys","Сабақ кілттері",keys().length],["qedit","Сұрақтар банкі"],["classes","Сыныптар",QW.classes.length]];
  const titles={overview:"Шолу",students:"Оқушылар",chapters:"Бөлімдер",items:"Сұрақтар талдауы"};
  let body;
- if(TV==="add")body=addView();else if(TV==="keys")body=keysView();else if(TV==="qedit")body=qeditView();
+ if(TV==="add")body=addView();else if(TV==="keys")body=keysView();else if(TV==="qedit")body=qeditView();else if(TV==="classes")body=classesView();
  else if(empty)body=`<section class="card empty"><h2>Әзірге нәтиже жоқ</h2><p>Оқушылар тест соңында алатын <b>нәтиже кодын</b> сізге жібереді. Кодтарды «Нәтиже қосу» бөліміне қойыңыз.</p>
   <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><a class="btn" href="#teacher" data-go="add">Нәтиже қосу</a></div></section>`;
  else body={overview,students,chapters,items:itemsView}[TV](rs);
@@ -917,7 +949,7 @@ function teacherView(){
  const fs=$("#fst");if(fs)fs.onchange=()=>{F.stage=fs.value;teacherView()};
  
  
- if(TV==="add")bindAdd();if(TV==="keys")bindKeys();if(TV==="qedit")bindQedit();if(TV==="students")bindExport(rs);
+ if(TV==="add")bindAdd();if(TV==="keys")bindKeys();if(TV==="qedit")bindQedit();if(TV==="classes")bindClasses();if(TV==="students")bindExport(rs);
  $$(".del").forEach(b=>b.onclick=()=>delRec(b.dataset.id));
 }
 function kpi(v,l,extra=""){return`<div class="kpi"><div class="v">${v}</div><div class="l">${l}</div>${extra}</div>`}
